@@ -297,16 +297,17 @@ interface Line {
   currency?: string;
 }
 
-const lineToEnhancedExpenseLine = (line: Line): EnhancedExpenseLine => ({
+const lineToEnhancedExpenseLine = (line: Line, currency: string): EnhancedExpenseLine => ({
   account: line.account,
   dealiasedAccount: line.account,
   amount: parseFloat(line.amount),
   reconcile: line.reconcile,
   comment: line.comment || undefined,
-  currency: line.currency,
+  currency: currency,
 });
 
 export interface Values {
+  currency: string;
   payee: string;
   txType: string;
   date: string;
@@ -334,6 +335,7 @@ export const EditTransaction: React.FC<{
   const [page, setPage] = React.useState(1);
 
   const initialValues: Values = {
+    currency: props.currencySymbol,
     payee: isNew ? '' : props.initialState.value.payee,
     txType: isNew ? 'expense' : 'unknown',
     date: isNew
@@ -365,8 +367,7 @@ export const EditTransaction: React.FC<{
               account: line.account,
               amount: line.amount.toFixed(2),
               comment: line.comment || '',
-              reconcile: line.reconcile,
-              currency: line.currency,
+              reconcile: line.reconcile
             }),
           ),
   };
@@ -457,7 +458,7 @@ export const EditTransaction: React.FC<{
               // TODO: This is not a ISO8601. Once reconciliation is added, remove this and reformat file.
               date: values.date.replace(/-/g, '/'),
               expenselines: values.lines.map((line) =>
-                lineToEnhancedExpenseLine(line),
+                lineToEnhancedExpenseLine(line,values.currency),
               ),
               check: props.initialState.value.check,
               comment: props.initialState.value.comment,
@@ -498,7 +499,7 @@ export const EditTransaction: React.FC<{
                   <Margin className="flexGrow">
                     <Field
                       component={CurrencyInputFormik}
-                      currencySymbol={props.currencySymbol}
+                      currencySymbol={formik.values.currency}
                       name="total"
                       placeholder="Total Amount"
                     />
@@ -521,6 +522,13 @@ export const EditTransaction: React.FC<{
                     <ErrorMessage name="payee" component="div" />
                   </Margin>
                 )}
+                <Margin>
+                  <Field
+                    type="text"
+                    name="currency"
+                    placeholder="Currency"
+                  />    
+                </Margin>
               </>
             ) : (
               <div className="expenseLines">
@@ -535,7 +543,7 @@ export const EditTransaction: React.FC<{
                           i={i}
                           remove={remove}
                           txCache={props.txCache}
-                          currencySymbol={props.currencySymbol}
+                          currencySymbol={formik.values.currency}
                         />
                       ))}
                       <button
